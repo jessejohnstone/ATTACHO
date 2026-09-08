@@ -46,36 +46,34 @@ export default function Hero() {
             Find an opportunity
           </h2>
 
-          <div className="mt-5 space-y-4">
+          <form action="/opportunities" method="get" className="mt-5 space-y-4">
             <input
               type="text"
+              name="search"
               placeholder="Course or keyword"
               className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none focus:border-slate-500"
             />
 
-            <select className="w-full rounded-lg border border-slate-300 px-4 py-3">
+            <select name="town" className="w-full rounded-lg border border-slate-300 px-4 py-3">
               <option value="">Select town</option>
-              <option value="nairobi">Nairobi</option>
-              <option value="naivasha">Naivasha</option>
-              <option value="nakuru">Nakuru</option>
+              <option value="Nairobi">Nairobi</option>
+              <option value="Naivasha">Naivasha</option>
+              <option value="Nakuru">Nakuru</option>
             </select>
 
-            <select className="w-full rounded-lg border border-slate-300 px-4 py-3">
+            <select name="course" className="w-full rounded-lg border border-slate-300 px-4 py-3">
               <option value="">Select field</option>
-              <option value="cs">Computer Science</option>
-              <option value="it">Information Technology</option>
-              <option value="se">Software Engineering</option>
-              <option value="business">Business Administration</option>
-              <option value="finance">Finance</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Software Engineering">Software Engineering</option>
+              <option value="Business Administration">Business Administration</option>
+              <option value="Finance">Finance</option>
             </select>
 
-            <Link
-              href="/opportunities"
-              className="block rounded-lg bg-green-600 px-4 py-3 text-center font-semibold text-white hover:bg-green-700"
-            >
+            <button type="submit" className="block w-full rounded-lg bg-green-600 px-4 py-3 text-center font-semibold text-white hover:bg-green-700">
               Search Opportunities
-            </Link>
-          </div>
+            </button>
+          </form>
         </div>
       </div>
     </section>

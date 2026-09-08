@@ -1,4 +1,5 @@
 import type { Opportunity } from "@/lib/demo-opportunities";
+import Link from "next/link";
 
 export default function OpportunityCard({
   opportunity,
@@ -80,12 +81,12 @@ export default function OpportunityCard({
           })}
         </span>
 
-        <button
-          type="button"
+        <Link
+          href={`/opportunities/${opportunity.id}`}
           className="rounded-lg bg-slate-900 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700"
         >
           View details
-        </button>
+        </Link>
       </div>
     </article>
   );
