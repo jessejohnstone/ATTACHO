@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  STUDENT
+  COMPANY
+  ADMIN
+}
+
+enum ReservationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model User {
+  id           String        @id @default(cuid())
+  email        String        @unique
+  name         String
+  role         UserRole      @default(STUDENT)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  company      Company?
+  reservations Reservation[]
+}
+
+model Company {
+  id            String        @id @default(cuid())
+  ownerId       String        @unique
+  name          String
+  industry      String
+  town          String
+  county        String
+  description   String?
+  verified      Boolean       @default(false)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  owner         User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  opportunities Opportunity[]
+}
+
+model Opportunity {
+  id                  String        @id @default(cuid())
+  companyId           String
+  title               String
+  industry            String
+  town                String
+  county              String
+  description         String?
+  duration            String
+  startDate           DateTime
+  endDate             DateTime
+  availableSlots      Int
+  eligibleCourses     String[]
+  paid                Boolean       @default(false)
+  accommodation      Boolean       @default(false)
+  reservationFee      Int
+  applicationDeadline DateTime
+  verified            Boolean       @default(false)
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  company             Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  reservations        Reservation[]
+
+  @@index([county, town])
+  @@index([industry])
+  @@index([applicationDeadline])
+}
+
+model Reservation {
+  id            String            @id @default(cuid())
+  opportunityId String
+  studentId     String
+  status        ReservationStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  opportunity   Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+  student       User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([opportunityId, studentId])
+  @@index([studentId, status])
+}
