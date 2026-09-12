@@ -12,76 +12,347 @@ enum UserRole {
   ADMIN
 }
 
-enum ReservationStatus {
+enum CompanyVerificationStatus {
   PENDING
+  UNDER_REVIEW
+  VERIFIED
+  REJECTED
+  SUSPENDED
+}
+
+enum OpportunityStatus {
+  DRAFT
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+  CLOSED
+  SUSPENDED
+}
+
+enum ReservationStatus {
+  PENDING_REVIEW
+  PENDING_COMPANY_CONFIRMATION
+  ACCEPTED
+  PAYMENT_REQUIRED
+  PAYMENT_PENDING
+  PAID
   CONFIRMED
+  DECLINED
   CANCELLED
+  REFUNDED
+  EXPIRED
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
 }
 
 model User {
-  id           String        @id @default(cuid())
-  email        String        @unique
-  name         String
-  role         UserRole      @default(STUDENT)
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
-  company      Company?
-  reservations Reservation[]
+  id           String   @id @default(cuid())
+  email        String   @unique
+  phone        String?  @unique
+  passwordHash String
+  role         UserRole
+  isVerified   Boolean  @default(false)
+  isActive     Boolean  @default(true)
+
+  studentProfile StudentProfile?
+  company        Company?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([role])
+  @@index([isVerified])
+}
+
+model StudentProfile {
+  id                 String   @id @default(cuid())
+  userId             String   @unique
+  fullName           String
+  institution        String?
+  course             String?
+  yearOfStudy        Int?
+  registrationNumber String?
+  preferredTown      String?
+  preferredCounty    String?
+  attachmentStart    DateTime?
+  attachmentEnd      DateTime?
+  skills             String[]
+  preferredIndustries String[]
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  documents       Document[]
+  savedOpportunities SavedOpportunity[]
+  reservations    Reservation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Company {
-  id            String        @id @default(cuid())
-  ownerId       String        @unique
-  name          String
-  industry      String
-  town          String
-  county        String
-  description   String?
-  verified      Boolean       @default(false)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  owner         User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  id                   String                     @id @default(cuid())
+  userId               String                     @unique
+  legalName            String
+  tradingName          String?
+  industry             String
+  physicalAddress      String?
+  county               String
+  town                 String
+  website              String?
+  officialEmail        String?
+  contactPerson        String?
+  contactPhone         String?
+  registrationInfo     String?
+  availableCapacity   Int?
+  verificationStatus  CompanyVerificationStatus @default(PENDING)
+  isDemo               Boolean                    @default(true)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  verification CompanyVerification?
+  opportunities Opportunity[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([county, town])
+  @@index([verificationStatus])
+}
+
+model CompanyVerification {
+  id          String                     @id @default(cuid())
+  companyId   String                     @unique
+  status      CompanyVerificationStatus  @default(PENDING)
+  reviewedAt  DateTime?
+  reviewNotes String?
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  documents Document[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Course {
+  id   String @id @default(cuid())
+  name String @unique
+
   opportunities Opportunity[]
 }
 
+model Location {
+  id     String @id @default(cuid())
+  county String
+  town   String
+
+  opportunities Opportunity[]
+
+  @@unique([county, town])
+}
+
 model Opportunity {
-  id                  String        @id @default(cuid())
+  id                  String            @id @default(cuid())
   companyId           String
+  courseId            String?
+  locationId          String?
+
   title               String
   industry            String
-  town                String
-  county              String
-  description         String?
+  description         String
+  duties              String?
+  requiredSkills      String[]
   duration            String
   startDate           DateTime
   endDate             DateTime
+  reportingInstructions String?
+  accommodation       Boolean           @default(false)
+  transportGuidance   String?
+  paid                Boolean           @default(false)
+  reservationFee      Int               @default(0)
   availableSlots      Int
-  eligibleCourses     String[]
-  paid                Boolean       @default(false)
-  accommodation      Boolean       @default(false)
-  reservationFee      Int
   applicationDeadline DateTime
-  verified            Boolean       @default(false)
-  createdAt           DateTime      @default(now())
-  updatedAt           DateTime      @updatedAt
-  company             Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  reservations        Reservation[]
+  status              OpportunityStatus  @default(DRAFT)
+  isDemo              Boolean            @default(true)
 
-  @@index([county, town])
-  @@index([industry])
-  @@index([applicationDeadline])
+  company  Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  course   Course?  @relation(fields: [courseId], references: [id])
+  location Location? @relation(fields: [locationId], references: [id])
+
+  savedBy     SavedOpportunity[]
+  reservations Reservation[]
+  reviews     Review[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([courseId])
+  @@index([locationId])
+  @@index([status])
+  @@index([startDate])
+}
+
+model SavedOpportunity {
+  id            String @id @default(cuid())
+  studentId     String
+  opportunityId String
+
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunity Opportunity   @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, opportunityId])
+  @@index([studentId])
 }
 
 model Reservation {
   id            String            @id @default(cuid())
-  opportunityId String
   studentId     String
-  status        ReservationStatus @default(PENDING)
-  createdAt     DateTime          @default(now())
-  updatedAt     DateTime          @updatedAt
-  opportunity   Opportunity       @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
-  student       User              @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunityId String
+  status        ReservationStatus @default(PENDING_REVIEW)
+  notes         String?
 
-  @@unique([opportunityId, studentId])
-  @@index([studentId, status])
+  student     StudentProfile @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  opportunity Opportunity   @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  booking Booking?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, opportunityId])
+  @@index([status])
+  @@index([opportunityId, status])
+}
+
+model Booking {
+  id            String @id @default(cuid())
+  reservationId String @unique
+  reference     String @unique
+
+  reservation Reservation @relation(fields: [reservationId], references: [id], onDelete: Cascade)
+
+  payments   Payment[]
+  documents  Document[]
+  notifications Notification[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  bookingId       String
+  transactionRef  String        @unique
+  provider        String
+  amount          Int
+  currency        String        @default("KES")
+  status          PaymentStatus @default(PENDING)
+  checkoutRequestId String?
+  receiptNumber   String?
+  callbackPayload String?
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([bookingId])
+  @@index([status])
+}
+
+model Document {
+  id              String @id @default(cuid())
+  studentId       String?
+  companyVerificationId String?
+  bookingId       String?
+  type            String
+  fileName        String
+  storageKey      String
+  mimeType        String
+  fileSize        Int
+
+  student             StudentProfile?       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  companyVerification CompanyVerification? @relation(fields: [companyVerificationId], references: [id], onDelete: Cascade)
+  booking             Booking?              @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([studentId])
+  @@index([bookingId])
+}
+
+model Notification {
+  id        String @id @default(cuid())
+  bookingId String?
+  userId    String?
+  title     String
+  message   String
+  read      Boolean @default(false)
+
+  booking Booking? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([read])
+}
+
+model SupportTicket {
+  id          String @id @default(cuid())
+  userId      String
+  subject     String
+  description String
+  status      String @default("OPEN")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+model Review {
+  id            String @id @default(cuid())
+  opportunityId String
+  rating        Int
+  comment       String?
+
+  opportunity Opportunity @relation(fields: [opportunityId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
+
+model FAQ {
+  id        String @id @default(cuid())
+  question  String
+  answer    String
+  published Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String @id @default(cuid())
+  userId    String?
+  action    String
+  entity    String
+  entityId  String?
+  metadata  Json?
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([entity, entityId])
+  @@index([createdAt])
 }
